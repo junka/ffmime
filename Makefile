@@ -14,7 +14,7 @@ dist/ffmime-wasm.js:
 	-O3 \
 	-L/opt/ffmpeg/lib \
 	-I/opt/ffmpeg/include/ \
-	-s EXPORTED_RUNTIME_METHODS="[FS, cwrap, ccall, getValue, setValue, writeAsciiToMemory, getmime]" \
+	-s EXPORTED_RUNTIME_METHODS="[FS, cwrap, ccall, getValue, setValue, writeAsciiToMemory]" \
 	-s INITIAL_MEMORY=268435456 \
 	-lavformat -lavutil -lavcodec -lm \
 	-lnodefs.js \
