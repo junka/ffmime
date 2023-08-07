@@ -14,9 +14,7 @@ extern "C" {
 #include <libavcodec/avcodec.h>
 #endif
 #include <libavformat/avformat.h>
-#ifdef ENABLE_AVUTIL
 #include <libavutil/avutil.h>
-#endif
 }
 
 #ifdef av_fourcc2str
@@ -88,9 +86,7 @@ static std::string string_format(const char *fmt, ...) {
 }
 
 std::string getmime(const std::string filename) {
-#ifdef ENABLE_AVUTIL
   av_log_set_level(AV_LOG_QUIET);
-#endif
   const char * aot_str[0x20] = {
     "",
     "",
@@ -139,11 +135,7 @@ std::string getmime(const std::string filename) {
     return mime;
   }
 
-  AVDictionary *options = nullptr;
-  av_dict_set(&options, "analyzeduration", "80000000", 0);
-  av_dict_set(&options, "probesize", "8000000", 0);
-
-  if (avformat_open_input(&fmt_ctx, filename.c_str(), NULL, &options) != 0) {
+  if (avformat_open_input(&fmt_ctx, filename.c_str(), NULL, NULL) != 0) {
     return NULL;
   }
   const AVInputFormat *iformat = fmt_ctx->iformat;
@@ -162,7 +154,7 @@ std::string getmime(const std::string filename) {
 #endif
 
   // av_dump_format(fmt_ctx, 0, filename, 0);
-  for (int i = 0; i < fmt_ctx->nb_streams; i++) {
+  for (int i = 0; i < (int)fmt_ctx->nb_streams; i++) {
     AVStream *s = fmt_ctx->streams[i];
 #ifdef ENABLE_AVCODEC
     if (avcodec_parameters_to_context(avctx, s->codecpar) < 0) {

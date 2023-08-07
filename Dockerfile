@@ -41,9 +41,8 @@ RUN cd /root/ffmpeg-${FFMPEG_VERSION} && \
   --disable-postproc \
   --disable-swscale \
   --disable-everything \
-  --enable-protocol=file \
   --disable-encoders \
-  --disable-muxers \
+  --enable-muxers \
   --disable-filters \
   --disable-outdevs \
   --disable-decoders \
