@@ -1,0 +1,25 @@
+{
+  "name": "ffmime",
+  "version": "1.0.0",
+  "author": "junka <wan.junjie@foxmail.com>",
+  "description": "probe file to get mimetype and codecs for a local media",
+  "main": "index.js",
+  "scripts": {
+    "test": "node index.js ../test.mp4"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/junka/ffmime.git"
+  },
+  "keywords": [
+    "ffmpeg",
+    "mimetype",
+    "codecs"
+  ],
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/junka/ffmime/issues"
+  },
+  "homepage": "https://github.com/junka/ffmime#readme",
+  "bin": "cli.js"
+}
