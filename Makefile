@@ -1,12 +1,13 @@
 
+.PHONY: all
 
-all: mime dist/ffmime-wasm.js
+all: mime
 
 clean:
-	rm -f ffmime
+	rm -f dist/ffmime
 
 mime:
-	g++ main.cpp -o ffmime -DNATIVE_CLI -lavformat
+	g++ main.cpp -o dist/ffmime -DNATIVE_CLI -lavformat -lavcodec -lavutil
 
 dist/ffmime-wasm.js:
 	mkdir -p dist && \

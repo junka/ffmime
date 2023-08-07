@@ -1,9 +1,13 @@
+#include <string.h>
 #ifndef NATIVE_CLI
 #include <emscripten.h>
 #include <emscripten/bind.h>
 #endif
 
 #include <string>
+#ifdef NATIVE_CLI
+#include <iostream>
+#endif
 
 extern "C" {
 #ifdef ENABLE_AVCODEC
@@ -15,7 +19,16 @@ extern "C" {
 #endif
 }
 
-using namespace emscripten;
+#ifdef av_fourcc2str
+#undef av_fourcc2str
+av_always_inline char *av_fourcc2str(unsigned int fourcc) {
+  char str[AV_FOURCC_MAX_STRING_SIZE];
+  memset(str, 0, sizeof(str));
+  return av_fourcc_make_string(str, fourcc);
+}
+#endif
+
+// using namespace emscripten;
 
 // https://developer.mozilla.org/en-US/docs/Web/Media/Formats/codecs_parameter
 /*
@@ -60,7 +73,7 @@ https://wiki.whatwg.org/wiki/video_type_parameters#MPEG
 */
 
 // standard of std::format is not supported by emscripten now
-std::string string_format(const char *fmt, ...) {
+static std::string string_format(const char *fmt, ...) {
   char *ret;
   va_list ap;
 
@@ -78,6 +91,40 @@ std::string getmime(const std::string filename) {
 #ifdef ENABLE_AVUTIL
   av_log_set_level(AV_LOG_QUIET);
 #endif
+  const char * aot_str[0x20] = {
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "45",
+    "40",
+    "41",
+    "4A",
+    "4C",
+    "4B",
+    "",
+    "42",
+    "",
+    "43",
+    "",
+    "",
+    "",
+    "44",
+  };
   const AVOutputFormat *format = av_guess_format(NULL, filename.c_str(), NULL);
   enum AVMediaType type = AVMEDIA_TYPE_UNKNOWN;
   AVFormatContext * fmt_ctx = NULL;
@@ -87,15 +134,19 @@ std::string getmime(const std::string filename) {
   std::string codecs;
   std::string mime;
 
-  if (format->mime_type && !strncmp(format->mime_type, "text", 4)) {
+  if (format && format->mime_type && !strncmp(format->mime_type, "text", 4)) {
     mime = format->mime_type;
     return mime;
   }
 
-  if (avformat_open_input(&fmt_ctx, filename.c_str(), NULL, NULL) != 0) {
-    // printf("can not open %s", filename);
+  AVDictionary *options = nullptr;
+  av_dict_set(&options, "analyzeduration", "80000000", 0);
+  av_dict_set(&options, "probesize", "8000000", 0);
+
+  if (avformat_open_input(&fmt_ctx, filename.c_str(), NULL, &options) != 0) {
     return NULL;
   }
+  const AVInputFormat *iformat = fmt_ctx->iformat;
 
   if (avformat_find_stream_info(fmt_ctx, NULL) < 0) {
     // printf("error in get stream info\n");
@@ -199,12 +250,22 @@ std::string getmime(const std::string filename) {
       case AV_CODEC_ID_ALAC:
       case AV_CODEC_ID_AAC:
         if (s->codecpar->codec_tag) {
-        codecs +=
-            string_format("%s.40.%d", av_fourcc2str(s->codecpar->codec_tag),
-                          s->codecpar->profile);
+          codecs += av_fourcc2str(s->codecpar->codec_tag);
+          if (s->codecpar->extradata_size > 2) {
+            codecs += ".";
+            codecs += aot_str[s->codecpar->extradata[0] & 0x1F];
+            codecs += string_format(".%d", (s->codecpar->extradata[1] - 0x80) >> 3);
+          } else {
+            codecs += ".40";
+            // FF_PROFILE_UNKNOWN
+            if (s->codecpar->profile != -99) {
+              codecs += string_format(".%d", s->codecpar->profile);
+            }
+          }
         } else {
         codecs += string_format("%s", avcodec_get_name(s->codecpar->codec_id));
         }
+
         break;
       
       case AV_CODEC_ID_PCM_S16LE:
@@ -288,16 +349,28 @@ std::string getmime(const std::string filename) {
     return mime;
   }
 
-  if (!format->mime_type) {
-      mime += string_format("%s/", av_get_media_type_string(type));
+  if (format && format->mime_type) {
+    mime += format->mime_type;
+  } else if (format && !format->mime_type) {
+    mime += string_format("%s/", av_get_media_type_string(type));
+    if (format->name) {
       if (!strcmp(format->name, "mov")) {
         mime += "quicktime";
-      } else if (!strcmp(format->name, "3gp")) {
-        mime += "3gp";
+      } else {
+        mime += format->name;
       }
-  } else {
-      mime += format->mime_type;
+    }
+  } else if (!format) {
+    mime += string_format("%s/", av_get_media_type_string(type));
+    if (iformat->extensions) {
+      if (iformat->mime_type) {
+        mime += iformat->mime_type;
+      } else if (iformat->name) {
+        mime += iformat->name;
+      }
+    }
   }
+
   // printf("%s", mime);
   if (codecs.length() > 0 && (!mime.compare(0, 5, "video", 5) || !mime.compare(0, 5, "audio", 5))) {
       mime += "; ";
@@ -313,7 +386,6 @@ std::string getmime(const std::string filename) {
 }
 
 #ifdef NATIVE_CLI
-#include <iostream>
 int main(int argc, char **argv)
 {
   std::string filename = argv[1];
