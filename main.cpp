@@ -183,12 +183,16 @@ std::string getmime(const std::string filename) {
 #endif
     switch (s->codecpar->codec_id) {
       case AV_CODEC_ID_H264:
+      if (s->codecpar->codec_tag) {
+        codecs += av_fourcc2str(s->codecpar->codec_tag);
+      } else {
+        codecs += "avc1";
+      }
       //see AVCDecoderConfigurationRecord
       // ff_h264_decode_extradata(s->codecpar->extradata, s->codecpar->extradata_size,);
       if (s->codecpar->extradata_size > 4 &&
           s->codecpar->extradata[0] == 1) {
-        codecs += string_format("%s.%02x%02x%02x",
-                       av_fourcc2str(s->codecpar->codec_tag),
+        codecs += string_format(".%02x%02x%02x",
                        s->codecpar->extradata[1], s->codecpar->extradata[2],
                        s->codecpar->extradata[3]);
       } else if (s->codecpar->extradata_size > 12 &&
@@ -198,20 +202,23 @@ std::string getmime(const std::string filename) {
                  s->codecpar->extradata[3] == 1) {
         //raw SPS
         codecs += string_format(
-            "%s.%02x%02x%02x", av_fourcc2str(s->codecpar->codec_tag),
+            ".%02x%02x%02x",
             s->codecpar->extradata[10], s->codecpar->extradata[11],
             s->codecpar->extradata[12]);
       } else {
-        codecs += string_format("%s.%02x%02x%02x",
-                                av_fourcc2str(s->codecpar->codec_tag),
+        codecs += string_format(".%02x%02x%02x",
                                 s->codecpar->profile, 0, s->codecpar->level);
       }
       break;
       case AV_CODEC_ID_HEVC:
       // HEVCDecoderConfigurationRecord
+      if (s->codecpar->codec_tag) {
+        codecs += av_fourcc2str(s->codecpar->codec_tag);
+      } else {
+        codecs += "hev1";
+      }
       if (s->codecpar->extradata_size > 4 && s->codecpar->extradata[0] == 1) {
-        codecs += string_format("%s.%d.%d.L%d.B%d",
-                                av_fourcc2str(s->codecpar->codec_tag),
+        codecs += string_format(".%d.%d.L%d.B%d",
                                 s->codecpar->extradata[1] & 0x1F,
                                 ((s->codecpar->extradata[1] >> 5) & 0x1) + 5,
                                 s->codecpar->extradata[12],
@@ -220,15 +227,15 @@ std::string getmime(const std::string filename) {
                                     : ((s->codecpar->extradata[5] >> 3) & 0x3));
       } else {
         codecs += string_format(
-            "%s.%d.%d.L%d.B%d", av_fourcc2str(s->codecpar->codec_tag),
-            s->codecpar->profile, ((s->codecpar->profile >> 5) & 0x1) + 5,
+            ".%d.%d.L%d.B%d", s->codecpar->profile,
+            ((s->codecpar->profile >> 5) & 0x1) + 5,
             s->codecpar->level, ((s->codecpar->level >> 1) & 0x7));
       }
         break;
       case AV_CODEC_ID_AV1:
         // AVCDecoderConfigurationRecord
         if (s->codecpar->extradata_size > 4 && s->codecpar->extradata[0] == 0x81) {
-        codecs += string_format(
+          codecs += string_format(
             "av01.%d.%02d%c.%02d", (s->codecpar->extradata[1] >> 5) & 0x7,
             s->codecpar->extradata[1] & 0x1F,
             (s->codecpar->extradata[2] >> 7) & 0x1 ? 'H' : 'M',
@@ -236,9 +243,7 @@ std::string getmime(const std::string filename) {
                 ? 12
                 : (((s->codecpar->extradata[2] >> 6) & 0x1) ? 10 : 8));
         } else {
-        codecs +=
-            string_format("av01.%d.%02d%c.%02d",
-                          //  avcodec_get_name(s->codecpar->codec_id),
+          codecs += string_format("av01.%d.%02d%c.%02d",
                           s->codecpar->profile, s->codecpar->level, 'M', 10);
         }
         break;
@@ -246,44 +251,49 @@ std::string getmime(const std::string filename) {
       case AV_CODEC_ID_AAC:
         if (s->codecpar->codec_tag) {
           codecs += av_fourcc2str(s->codecpar->codec_tag);
-          if (s->codecpar->extradata_size > 2) {
-            codecs += ".";
-            codecs += aot_str[s->codecpar->extradata[0] & 0x1F];
-            codecs += string_format(".%d", (s->codecpar->extradata[1] - 0x80) >> 3);
-          } else {
-            codecs += ".40";
-            // FF_PROFILE_UNKNOWN
-            if (s->codecpar->profile != -99) {
-              codecs += string_format(".%d", s->codecpar->profile);
-            }
-          }
         } else {
-        codecs += string_format("%s", avcodec_get_name(s->codecpar->codec_id));
+          codecs += "mp4a";
+        }
+        if (s->codecpar->extradata_size > 2) {
+          codecs += ".";
+          codecs += (strncmp(aot_str[s->codecpar->extradata[0] & 0x1F], "", 2) ?
+            aot_str[s->codecpar->extradata[0] & 0x1F] : "40");
+          codecs += string_format(".%d", (s->codecpar->extradata[1] - 0x80) >> 3);
+        } else {
+          codecs += ".40";
+          // FF_PROFILE_UNKNOWN
+          if (s->codecpar->profile != -99) {
+            codecs += string_format(".%d", s->codecpar->profile);
+          }
         }
 
         break;
       
       case AV_CODEC_ID_PCM_S16LE:
-        codecs += string_format("%d", 0);
+        codecs +=  "0";
         break;
       case AV_CODEC_ID_PCM_ALAW:
-        codecs += string_format("%d", 1);
+        codecs += "1";
         break;
       case AV_CODEC_ID_ADPCM_MS:
-        codecs += string_format("%d", 2);
+        codecs += "2";
         break;
       case AV_CODEC_ID_PCM_F32LE:
-        codecs += string_format("%d", 3);
+        codecs += "3";
         break;
       case AV_CODEC_ID_ADPCM_IMA_WAV:
-        codecs += string_format("%d", 17);
+        codecs += "17";
         break;
       case AV_CODEC_ID_MP2:
       case AV_CODEC_ID_MP3:
-        codecs += string_format("%d", 85);
+        codecs += "85";
         break;
       case AV_CODEC_ID_MPEG4:
-        codecs += av_fourcc2str(s->codecpar->codec_tag);
+        if (s->codecpar->codec_tag) {
+          codecs += av_fourcc2str(s->codecpar->codec_tag);
+        } else {
+          codecs =+ "mp4v";
+        }
         break;
       case AV_CODEC_ID_MJPEG:
         mime = "image/jpeg";

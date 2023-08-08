@@ -1,6 +1,6 @@
 {
   "name": "ffmime",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "author": "junka <wan.junjie@foxmail.com>",
   "description": "probe file to get mimetype and codecs for a local media",
   "main": "index.js",
