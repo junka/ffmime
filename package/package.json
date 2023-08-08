@@ -1,13 +1,11 @@
 {
   "name": "ffmime",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "author": "junka <wan.junjie@foxmail.com>",
   "description": "probe file to get mimetype and codecs for a local media",
   "main": "index.js",
   "types": "index.d.ts",
-  "bin": {
-    "ffmime": "cli.js"
-  },
+  "bin": "cli.js",
   "scripts": {
     "test": "node cli.js ../test.mp4"
   },
