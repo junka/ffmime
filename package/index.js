@@ -23,4 +23,4 @@ async function GetMimeCodecs(file) {
   }
 }
 
-module.exports = GetMimeCodecs;
+module.exports = {GetMimeCodecs};

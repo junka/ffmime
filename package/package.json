@@ -1,11 +1,15 @@
 {
   "name": "ffmime",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "author": "junka <wan.junjie@foxmail.com>",
   "description": "probe file to get mimetype and codecs for a local media",
   "main": "index.js",
+  "types": "index.d.ts",
+  "bin": {
+    "ffmime": "cli.js"
+  },
   "scripts": {
-    "test": "node index.js ../test.mp4"
+    "test": "node cli.js ../test.mp4"
   },
   "repository": {
     "type": "git",
@@ -20,6 +24,5 @@
   "bugs": {
     "url": "https://github.com/junka/ffmime/issues"
   },
-  "homepage": "https://github.com/junka/ffmime#readme",
-  "bin": "cli.js"
+  "homepage": "https://github.com/junka/ffmime#readme"
 }
