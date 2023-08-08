@@ -1,3 +1,6 @@
+/* SPDX-License-Identifier: ISC
+ * Copyright(c) 2023 junka
+ */
 #include <string.h>
 #ifndef NATIVE_CLI
 #include <emscripten.h>

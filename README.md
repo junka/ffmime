@@ -1,5 +1,5 @@
 
-
+### About mime codecs
 For MSE, we usually need a mime type and codec string like
 ```
 video/mp4; codecs="avc1.64001E, mp4a.40.2"
@@ -11,7 +11,7 @@ see [Wiki](https://wiki.whatwg.org/wiki/video_type_parameters)
 
 ---
 
-mime supported types
+### ffmime supported types
 ```
 text/
 image/
@@ -29,16 +29,36 @@ hev1.P.T.Ll.Bb (HEVC video)
 and other no spec using codec name
 ```
 
-
+### How to use a simple command line
 How to know the the mime type and codecs.
-just run 
+For those with ffmpeg library installed and want to build from source
 ```
 make mime
 ./ffmime mediafile
 ```
+For those want to run npx
+```
+npx ffmime mediafile
+```
 
-wasm
+### wasm
 ```
-docker build -f Dockerfile --output dist .
+npm install ffmime
 ```
-wasm js file is built to dist directory
+Then in the code, like in electron
+
+```
+import {GetMimeCodecs} from 'ffmime'
+const mimeType = await GetMimeCodecs(filename)
+console log(mimeType)
+```
+
+or run npx like above.
+
+
+To build wasm from source,
+```
+docker build -f Dockerfile --output package .
+```
+wasm js files are built to package directory and then you can publish and import the package.
+Only muxer and demuxer enabled in ffmpeg, so we could have a minified wasm binary which is about 2MB size. This is much more reasonable than a full ffmpeg when we only need a probe for the mimetype and check with MediaSource.isTypeSupported.
