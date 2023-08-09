@@ -88,6 +88,30 @@ static std::string string_format(const char *fmt, ...) {
   return str;
 }
 
+std::string constraintStr(uint8_t *constrain) {
+  std::string res;
+  for (int i = 5; i >= 0; i --) {
+    if (constrain[i] || res.length() > 0) {
+      res += string_format("%x", constrain[i]);
+    }
+  }
+  return res;
+}
+std::string profileCompat(uint8_t *compt) {
+  uint32_t val = compt[0] << 24 | compt[1] << 16 | compt[2] << 8 | compt[3];
+  uint32_t ret = 0;
+  for (int i = 0; i < 32; i ++) {
+    ret |= val & 0x1;
+    if (i == 31) {
+      break;
+    }
+    ret <<= 1;
+    val >>= 1;
+  }
+  std::string res = string_format("%x", ret);
+  return res;
+}
+
 std::string getmime(const std::string filename) {
   av_log_set_level(AV_LOG_QUIET);
   const char * aot_str[0x20] = {
@@ -211,25 +235,45 @@ std::string getmime(const std::string filename) {
       }
       break;
       case AV_CODEC_ID_HEVC:
-      // HEVCDecoderConfigurationRecord
+      /*
+      // HEVCDecoderConfigurationRecord in 14496-15.
+      unsigned int(8)  configurationVersion;
+      unsigned int(2)  general_profile_space;
+      unsigned int(1)  general_tier_flag;
+      unsigned int(5)  general_profile_idc;
+      unsigned int(32) general_profile_compatibility_flags;
+      unsigned int(48) general_constraint_indicator_flags;
+      unsigned int(8)  general_level_idc;
+      bit(4) reserved &#61; ‘1111’b;
+      unsigned int(12) min_spatial_segmentation_idc;
+      bit(6) reserved &#61; ‘111111’b;
+      unsigned int(2)  parallelismType;
+      bit(6) reserved &#61; ‘111111’b;
+      unsigned int(2)  chromaFormat;
+      bit(5) reserved &#61; ‘11111’b;
+      unsigned int(3)  bitDepthLumaMinus8;
+      bit(5) reserved &#61; ‘11111’b;
+      unsigned int(3)  bitDepthChromaMinus8;
+      */
       if (s->codecpar->codec_tag) {
         codecs += av_fourcc2str(s->codecpar->codec_tag);
       } else {
         codecs += "hev1";
       }
-      if (s->codecpar->extradata_size > 4 && s->codecpar->extradata[0] == 1) {
-        codecs += string_format(".%d.%d.L%d.B%d",
-                                s->codecpar->extradata[1] & 0x1F,
-                                ((s->codecpar->extradata[1] >> 5) & 0x1) + 5,
-                                s->codecpar->extradata[12],
-                                (s->codecpar->extradata[11] & 0x1)
-                                    ? 0
-                                    : ((s->codecpar->extradata[5] >> 3) & 0x3));
+      if (s->codecpar->extradata_size > 22 && s->codecpar->extradata[0] == 1) {
+        const char *profile_space[4] = {"", ".A", ".B", ".C"};
+        codecs += profile_space[s->codecpar->extradata[1] >> 6 & 0x3]; //profile_space
+        codecs += string_format(".%d.", s->codecpar->extradata[1] & 0x1F); //profile_idc
+        codecs += profileCompat(s->codecpar->extradata+2);
+        codecs += string_format(".%c%d.", ((s->codecpar->extradata[1] >> 5) &0x1) ? 'H' : 'L', /* tier_flag */
+            s->codecpar->extradata[12]); /* level_idc */
+        codecs += constraintStr(s->codecpar->extradata+6);
       } else {
         codecs += string_format(
-            ".%d.%d.L%d.B%d", s->codecpar->profile,
-            ((s->codecpar->profile >> 5) & 0x1) + 5,
-            s->codecpar->level, ((s->codecpar->level >> 1) & 0x7));
+            ".%d.%d.%c%d.%c%d", s->codecpar->profile,
+            ((s->codecpar->profile >> 5) & 0x1) + 5, ((s->codecpar->profile >> 5) & 0x1) == 0 ? 'L': 'H', s->codecpar->level,
+            s->codecpar->profile == 0 ? ' ' : ('A' + s->codecpar->profile-1),
+            ((s->codecpar->level >> 1) & 0x7));
       }
         break;
       case AV_CODEC_ID_AV1:
