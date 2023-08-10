@@ -150,27 +150,30 @@ std::string getmime(const std::string filename) {
   };
   const AVOutputFormat *format = av_guess_format(NULL, filename.c_str(), NULL);
   enum AVMediaType type = AVMEDIA_TYPE_UNKNOWN;
-  AVFormatContext * fmt_ctx = NULL;
+  AVFormatContext *fmt_ctx = NULL;
 #ifdef ENABLE_AVCODEC
   AVCodecContext *avctx = NULL;
 #endif
   std::string codecs;
   std::string mime;
+  int ret;
 
-  if (format && format->mime_type && !strncmp(format->mime_type, "text", 4)) {
-    mime = format->mime_type;
+  if (format && format->mime_type) {
+    mime += format->mime_type;
+    if (!strncmp(format->mime_type, "text", 4)) {
+      return mime;
+    }
+  }
+  ret = avformat_open_input(&fmt_ctx, filename.c_str(), NULL, NULL);
+  if (ret != 0) {
+    // std::cout << "fail to open " << filename << AVERROR(ret) << std::endl;
     return mime;
   }
 
-  if (avformat_open_input(&fmt_ctx, filename.c_str(), NULL, NULL) != 0) {
-    return NULL;
-  }
   const AVInputFormat *iformat = fmt_ctx->iformat;
-
   if (avformat_find_stream_info(fmt_ctx, NULL) < 0) {
-    // printf("error in get stream info\n");
     avformat_close_input(&fmt_ctx);
-    return NULL;
+    return mime;
   }
 #ifdef ENABLE_AVCODEC
   avctx = avcodec_alloc_context3(NULL);
@@ -203,7 +206,7 @@ std::string getmime(const std::string filename) {
 #if 0
     char streamCodecsString[256];
     avcodec_string(streamCodecsString, sizeof(streamCodecsString), avctx, 0);
-    printf("%d: %s\n", s->codecpar->extradata_size, streamCodecsString);
+    std::cout << streamCodecsString << std::endl;
 #endif
     switch (s->codecpar->codec_id) {
       case AV_CODEC_ID_H264:
@@ -398,9 +401,7 @@ std::string getmime(const std::string filename) {
     return mime;
   }
 
-  if (format && format->mime_type) {
-    mime += format->mime_type;
-  } else if (format && !format->mime_type) {
+  if (format && !format->mime_type) {
     mime += string_format("%s/", av_get_media_type_string(type));
     if (format->name) {
       if (!strcmp(format->name, "mov")) {

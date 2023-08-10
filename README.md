@@ -64,5 +64,10 @@ wasm js files are built to package directory and then you can publish and import
 Only muxer and demuxer enabled in ffmpeg, so we could have a minified wasm binary which is about 2MB size. This is much more reasonable than a full ffmpeg when we only need a probe for the mimetype and check with MediaSource.isTypeSupported.
 
 ### note
-some format could have a side effect. For example, a `mkv` format could output `video/x-matroska; codecs="avc1.640029, mp4a.40.2"` which is not supported by chrome, but you can replace `x-matroska` with `mp4` to make it supported.
+some format could have a side effect. 
+For example, a `mkv` format could output `video/x-matroska; codecs="avc1.640029, mp4a.40.2"` which is not supported by chrome, but you can replace `x-matroska` with `mp4` to make it supported.
 However, even the mimetype is `video/mp4`, if the container is fragmented, the media file will not be decoded right by MSE.
+
+A `mp3` format could output `audio/mpeg; codecs=85` which `85` is the codec id. For use in browser, just strip the codecs. `audio/mpeg` will be supported by the browser.
+
+Raw `pcm` can hardly probed without any hint. so it will return empty string.
