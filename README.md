@@ -61,7 +61,9 @@ To build wasm from source,
 docker build -f Dockerfile --output package .
 ```
 wasm js files are built to package directory and then you can publish and import the package.
-Only muxer and demuxer enabled in ffmpeg, so we could have a minified wasm binary which is about 2MB size. This is much more reasonable than a full ffmpeg when we only need a probe for the mimetype and check with MediaSource.isTypeSupported.
+Only muxer and demuxer enabled in ffmpeg, so we could have a minified wasm binary which is less than 2MB size. This is much more reasonable than a full ffmpeg when we only need a probe for the mimetype and check with MediaSource.isTypeSupported.
+
+It is really fast enough for demuxing and probe, so put it in a worker is not that reasonable.
 
 ### note
 some format could have a side effect. 

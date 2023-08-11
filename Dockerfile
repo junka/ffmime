@@ -10,7 +10,7 @@ RUN cd /root/ && \
   wget http://ffmpeg.org/releases/ffmpeg-${FFMPEG_VERSION}.tar.gz && \
   tar zxf ffmpeg-${FFMPEG_VERSION}.tar.gz && rm ffmpeg-${FFMPEG_VERSION}.tar.gz
 
-ARG CFLAGS="-O3"
+ARG CFLAGS="-O3 -Oz"
 ARG LDFLAGS="$CFLAGS -s INITIAL_MEMORY=33554432"
 
 # Compile ffmpeg.
