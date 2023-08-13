@@ -85,11 +85,12 @@ RUN cd /root/ffmpeg-${FFMPEG_VERSION} && \
 
 COPY ./main.cpp /build/main.cpp
 COPY ./Makefile /build/Makefile
+COPY ./demux.cpp /build/demux.cpp
 
 WORKDIR /build
 
 RUN make dist/ffmime-wasm.js
-
+RUN make dist/ffdemux-wasm.js
 
 FROM scratch AS mime-exporter
 COPY --from=build /build/dist/* .
