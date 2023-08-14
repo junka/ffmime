@@ -114,40 +114,6 @@ std::string profileCompat(uint8_t *compt) {
 
 std::string getmime(const std::string filename) {
   av_log_set_level(AV_LOG_QUIET);
-  const char * aot_str[0x20] = {
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "45",
-    "40",
-    "41",
-    "4A",
-    "4C",
-    "4B",
-    "",
-    "42",
-    "",
-    "43",
-    "",
-    "",
-    "",
-    "44",
-  };
   const AVOutputFormat *format = av_guess_format(NULL, filename.c_str(), NULL);
   enum AVMediaType type = AVMEDIA_TYPE_UNKNOWN;
   AVFormatContext *fmt_ctx = NULL;
@@ -296,22 +262,26 @@ std::string getmime(const std::string filename) {
         break;
       case AV_CODEC_ID_ALAC:
       case AV_CODEC_ID_AAC:
+        // AudioSpecificConfig
+        /* 5 bits: object type
+          if (object type == 31)
+              6 bits + 32: object type
+        */
         if (s->codecpar->codec_tag) {
           codecs += av_fourcc2str(s->codecpar->codec_tag);
         } else {
           codecs += "mp4a";
         }
         if (s->codecpar->extradata_size > 2) {
-          codecs += ".";
-          codecs += (strncmp(aot_str[s->codecpar->extradata[0] & 0x1F], "", 2) ?
-            aot_str[s->codecpar->extradata[0] & 0x1F] : "40");
-          codecs += string_format(".%d", (s->codecpar->extradata[1] - 0x80) >> 3);
+          codecs += ".40";
+          if ((s->codecpar->extradata[0] >> 3) == 0x1F) {
+            codecs += string_format("%d", (((s->codecpar->extradata[0] & 0x7) << 3) |
+                                            ((s->codecpar->extradata[1] >> 5) & 0x7)) + 32);
+          } else {
+            codecs += string_format(".%d", ((s->codecpar->extradata[0]>>3) & 0x1F));
+          }
         } else {
           codecs += ".40";
-          // FF_PROFILE_UNKNOWN
-          if (s->codecpar->profile != -99) {
-            codecs += string_format(".%d", s->codecpar->profile);
-          }
         }
 
         break;
