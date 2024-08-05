@@ -7,6 +7,7 @@ clean:
 	rm -f dist/ffmime
 
 mime:
+	mkdir -p dist
 	g++ main.cpp -o dist/ffmime -Wall -O0 -g -DNATIVE_CLI -lavformat -lavcodec -lavutil
 
 dist/ffmime-wasm.js:

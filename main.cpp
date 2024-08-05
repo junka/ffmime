@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: ISC
  * Copyright(c) 2023 junka
  */
-#include <string.h>
+#include <string>
 #ifndef NATIVE_CLI
 #include <emscripten.h>
 #include <emscripten/bind.h>
@@ -272,7 +272,7 @@ std::string getmime(const std::string filename) {
         } else {
           codecs += "mp4a";
         }
-        if (s->codecpar->extradata_size > 2) {
+        if (s->codecpar->extradata_size >= 2) {
           codecs += ".40";
           if ((s->codecpar->extradata[0] >> 3) == 0x1F) {
             codecs += string_format("%d", (((s->codecpar->extradata[0] & 0x7) << 3) |
